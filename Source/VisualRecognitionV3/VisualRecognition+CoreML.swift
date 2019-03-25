@@ -217,10 +217,6 @@ extension VisualRecognition {
 
         // return results after all classification requests have executed
         dispatchGroup.notify(queue: DispatchQueue.global(qos: .userInitiated)) {
-            guard errors.isEmpty else {
-                completionHandler(nil, errors[0])
-                return
-            }
             let classifiedImages: ClassifiedImages
             do {
                 classifiedImages = try self.convert(results: results, threshold: threshold)
@@ -229,8 +225,13 @@ extension VisualRecognition {
                 completionHandler(nil, error)
                 return
             }
-
-            completionHandler(classifiedImages, nil)
+            if errors.isEmpty {
+                completionHandler(classifiedImages, nil)
+            } else {
+                let error = WatsonError.other(message: "Local classification failed: \(errors[0].localizedDescription)")
+                completionHandler(classifiedImages, error)
+                return
+            }
         }
     }
 
