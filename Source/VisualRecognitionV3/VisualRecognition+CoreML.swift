@@ -217,21 +217,23 @@ extension VisualRecognition {
 
         // return results after all classification requests have executed
         dispatchGroup.notify(queue: DispatchQueue.global(qos: .userInitiated)) {
-            let classifiedImages: ClassifiedImages
-            do {
-                classifiedImages = try self.convert(results: results, threshold: threshold)
-            } catch {
-                let error = WatsonError.other(message: "Failed to represent results as JSON: \(error.localizedDescription)")
-                completionHandler(nil, error)
-                return
-            }
-            if errors.isEmpty {
-                completionHandler(classifiedImages, nil)
+            let classifiedImages: ClassifiedImages?
+            if !results.isEmpty {
+                do {
+                    classifiedImages = try self.convert(results: results, threshold: threshold)
+                } catch {
+                    let error = WatsonError.other(message: "Failed to represent results as JSON: \(error.localizedDescription)")
+                    completionHandler(nil, error)
+                    return
+                }
             } else {
-                let error = WatsonError.other(message: "Local classification failed: \(errors[0].localizedDescription)")
-                completionHandler(classifiedImages, error)
-                return
+                classifiedImages = nil
             }
+            var error: WatsonError? = nil
+            if !errors.isEmpty {
+                error = WatsonError.other(message: "Local classification failed: \(errors[0].localizedDescription)")
+            }
+            completionHandler(classifiedImages, error)
         }
     }
 
